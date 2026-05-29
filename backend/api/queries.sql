@@ -79,6 +79,61 @@ JOIN exercise e ON re.exercise_id = e.id
 WHERE re.routine_id = $1
 ORDER BY re."order";
 
+-- name: UpdateRoutine :one
+UPDATE routine
+SET name = $2
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteRoutine :exec
+DELETE FROM routine WHERE id = $1;
+
+-- name: CountRoutines :one
+SELECT COUNT(*) FROM routine;
+
+-- name: ListRoutinesPaginated :many
+SELECT * FROM routine
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: GetRoutineExercise :one
+SELECT * FROM routine_exercise WHERE id = $1 AND routine_id = $2;
+
+-- name: CountRoutineExercises :one
+SELECT COUNT(*) FROM routine_exercise WHERE routine_id = $1;
+
+-- name: GetRoutineExerciseByExercise :one
+SELECT * FROM routine_exercise WHERE routine_id = $1 AND exercise_id = $2 LIMIT 1;
+
+-- name: UpdateRoutineExerciseOrder :one
+UPDATE routine_exercise
+SET "order" = $2
+WHERE id = $1
+RETURNING *;
+
+-- name: ShiftRoutineExerciseOrderUp :exec
+UPDATE routine_exercise
+SET "order" = "order" + 1
+WHERE routine_id = $1 AND "order" >= $2;
+
+-- name: ShiftRoutineExerciseOrderDown :exec
+UPDATE routine_exercise
+SET "order" = "order" - 1
+WHERE routine_id = $1 AND "order" > $2;
+
+-- name: ReorderRoutineExerciseForward :exec
+UPDATE routine_exercise
+SET "order" = "order" - 1
+WHERE routine_id = $1 AND "order" > $2 AND "order" <= $3;
+
+-- name: ReorderRoutineExerciseBackward :exec
+UPDATE routine_exercise
+SET "order" = "order" + 1
+WHERE routine_id = $1 AND "order" >= $2 AND "order" < $3;
+
+-- name: DeleteRoutineExercise :exec
+DELETE FROM routine_exercise WHERE id = $1;
+
 -- name: CreateWorkoutSession :one
 INSERT INTO workout_session (routine_id, started_at)
 VALUES ($1, NOW())

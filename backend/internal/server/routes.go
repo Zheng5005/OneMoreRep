@@ -14,6 +14,9 @@ func registerRoutes(r chi.Router, db *store.DB) {
 	exerciseSvc := service.NewExerciseService(q)
 	exerciseHandler := handler.NewExercise(exerciseSvc)
 
+	routineSvc := service.NewRoutineService(db)
+	routineHandler := handler.NewRoutine(routineSvc)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", h.Health)
 
@@ -24,6 +27,24 @@ func registerRoutes(r chi.Router, db *store.DB) {
 				r.Get("/", exerciseHandler.Get)
 				r.Put("/", exerciseHandler.Update)
 				r.Delete("/", exerciseHandler.Delete)
+			})
+		})
+
+		r.Route("/routines", func(r chi.Router) {
+			r.Post("/", routineHandler.Create)
+			r.Get("/", routineHandler.List)
+			r.Route("/{id}", func(r chi.Router) {
+				r.Get("/", routineHandler.Get)
+				r.Put("/", routineHandler.Update)
+				r.Delete("/", routineHandler.Delete)
+
+				r.Route("/exercises", func(r chi.Router) {
+					r.Post("/", routineHandler.AddExercise)
+					r.Route("/{routineExerciseId}", func(r chi.Router) {
+						r.Put("/", routineHandler.UpdateExerciseOrder)
+						r.Delete("/", routineHandler.DeleteExercise)
+					})
+				})
 			})
 		})
 	})

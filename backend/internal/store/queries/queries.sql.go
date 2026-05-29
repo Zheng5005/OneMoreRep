@@ -25,12 +25,34 @@ func (q *Queries) CountExercises(ctx context.Context, dollar_1 string) (int64, e
 	return count, err
 }
 
+const countRoutineExercises = `-- name: CountRoutineExercises :one
+SELECT COUNT(*) FROM routine_exercise WHERE routine_id = $1
+`
+
+func (q *Queries) CountRoutineExercises(ctx context.Context, routineID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countRoutineExercises, routineID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countRoutineExercisesByExercise = `-- name: CountRoutineExercisesByExercise :one
 SELECT COUNT(*) FROM routine_exercise WHERE exercise_id = $1
 `
 
 func (q *Queries) CountRoutineExercisesByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error) {
 	row := q.db.QueryRow(ctx, countRoutineExercisesByExercise, exerciseID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countRoutines = `-- name: CountRoutines :one
+SELECT COUNT(*) FROM routine
+`
+
+func (q *Queries) CountRoutines(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countRoutines)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -171,6 +193,24 @@ func (q *Queries) DeleteExercise(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteRoutine = `-- name: DeleteRoutine :exec
+DELETE FROM routine WHERE id = $1
+`
+
+func (q *Queries) DeleteRoutine(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRoutine, id)
+	return err
+}
+
+const deleteRoutineExercise = `-- name: DeleteRoutineExercise :exec
+DELETE FROM routine_exercise WHERE id = $1
+`
+
+func (q *Queries) DeleteRoutineExercise(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRoutineExercise, id)
+	return err
+}
+
 const endWorkoutSession = `-- name: EndWorkoutSession :one
 UPDATE workout_session
 SET ended_at = NOW()
@@ -273,6 +313,48 @@ func (q *Queries) GetRoutine(ctx context.Context, id uuid.UUID) (Routine, error)
 	row := q.db.QueryRow(ctx, getRoutine, id)
 	var i Routine
 	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
+const getRoutineExercise = `-- name: GetRoutineExercise :one
+SELECT id, routine_id, exercise_id, "order" FROM routine_exercise WHERE id = $1 AND routine_id = $2
+`
+
+type GetRoutineExerciseParams struct {
+	ID        uuid.UUID `json:"id"`
+	RoutineID uuid.UUID `json:"routine_id"`
+}
+
+func (q *Queries) GetRoutineExercise(ctx context.Context, arg GetRoutineExerciseParams) (RoutineExercise, error) {
+	row := q.db.QueryRow(ctx, getRoutineExercise, arg.ID, arg.RoutineID)
+	var i RoutineExercise
+	err := row.Scan(
+		&i.ID,
+		&i.RoutineID,
+		&i.ExerciseID,
+		&i.Order,
+	)
+	return i, err
+}
+
+const getRoutineExerciseByExercise = `-- name: GetRoutineExerciseByExercise :one
+SELECT id, routine_id, exercise_id, "order" FROM routine_exercise WHERE routine_id = $1 AND exercise_id = $2 LIMIT 1
+`
+
+type GetRoutineExerciseByExerciseParams struct {
+	RoutineID  uuid.UUID `json:"routine_id"`
+	ExerciseID uuid.UUID `json:"exercise_id"`
+}
+
+func (q *Queries) GetRoutineExerciseByExercise(ctx context.Context, arg GetRoutineExerciseByExerciseParams) (RoutineExercise, error) {
+	row := q.db.QueryRow(ctx, getRoutineExerciseByExercise, arg.RoutineID, arg.ExerciseID)
+	var i RoutineExercise
+	err := row.Scan(
+		&i.ID,
+		&i.RoutineID,
+		&i.ExerciseID,
+		&i.Order,
+	)
 	return i, err
 }
 
@@ -404,6 +486,37 @@ ORDER BY created_at DESC
 
 func (q *Queries) ListRoutines(ctx context.Context) ([]Routine, error) {
 	rows, err := q.db.Query(ctx, listRoutines)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Routine{}
+	for rows.Next() {
+		var i Routine
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRoutinesPaginated = `-- name: ListRoutinesPaginated :many
+SELECT id, name, created_at FROM routine
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListRoutinesPaginatedParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) ListRoutinesPaginated(ctx context.Context, arg ListRoutinesPaginatedParams) ([]Routine, error) {
+	rows, err := q.db.Query(ctx, listRoutinesPaginated, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -559,6 +672,40 @@ func (q *Queries) Ping(ctx context.Context) (int32, error) {
 	return column_1, err
 }
 
+const reorderRoutineExerciseBackward = `-- name: ReorderRoutineExerciseBackward :exec
+UPDATE routine_exercise
+SET "order" = "order" + 1
+WHERE routine_id = $1 AND "order" >= $2 AND "order" < $3
+`
+
+type ReorderRoutineExerciseBackwardParams struct {
+	RoutineID uuid.UUID `json:"routine_id"`
+	Order     int32     `json:"order"`
+	Order_2   int32     `json:"order_2"`
+}
+
+func (q *Queries) ReorderRoutineExerciseBackward(ctx context.Context, arg ReorderRoutineExerciseBackwardParams) error {
+	_, err := q.db.Exec(ctx, reorderRoutineExerciseBackward, arg.RoutineID, arg.Order, arg.Order_2)
+	return err
+}
+
+const reorderRoutineExerciseForward = `-- name: ReorderRoutineExerciseForward :exec
+UPDATE routine_exercise
+SET "order" = "order" - 1
+WHERE routine_id = $1 AND "order" > $2 AND "order" <= $3
+`
+
+type ReorderRoutineExerciseForwardParams struct {
+	RoutineID uuid.UUID `json:"routine_id"`
+	Order     int32     `json:"order"`
+	Order_2   int32     `json:"order_2"`
+}
+
+func (q *Queries) ReorderRoutineExerciseForward(ctx context.Context, arg ReorderRoutineExerciseForwardParams) error {
+	_, err := q.db.Exec(ctx, reorderRoutineExerciseForward, arg.RoutineID, arg.Order, arg.Order_2)
+	return err
+}
+
 const searchExercises = `-- name: SearchExercises :many
 SELECT id, name, target_muscle, notes, created_at FROM exercise
 WHERE ($1::text = '' OR name ILIKE '%' || $1 || '%')
@@ -598,6 +745,38 @@ func (q *Queries) SearchExercises(ctx context.Context, arg SearchExercisesParams
 	return items, nil
 }
 
+const shiftRoutineExerciseOrderDown = `-- name: ShiftRoutineExerciseOrderDown :exec
+UPDATE routine_exercise
+SET "order" = "order" - 1
+WHERE routine_id = $1 AND "order" > $2
+`
+
+type ShiftRoutineExerciseOrderDownParams struct {
+	RoutineID uuid.UUID `json:"routine_id"`
+	Order     int32     `json:"order"`
+}
+
+func (q *Queries) ShiftRoutineExerciseOrderDown(ctx context.Context, arg ShiftRoutineExerciseOrderDownParams) error {
+	_, err := q.db.Exec(ctx, shiftRoutineExerciseOrderDown, arg.RoutineID, arg.Order)
+	return err
+}
+
+const shiftRoutineExerciseOrderUp = `-- name: ShiftRoutineExerciseOrderUp :exec
+UPDATE routine_exercise
+SET "order" = "order" + 1
+WHERE routine_id = $1 AND "order" >= $2
+`
+
+type ShiftRoutineExerciseOrderUpParams struct {
+	RoutineID uuid.UUID `json:"routine_id"`
+	Order     int32     `json:"order"`
+}
+
+func (q *Queries) ShiftRoutineExerciseOrderUp(ctx context.Context, arg ShiftRoutineExerciseOrderUpParams) error {
+	_, err := q.db.Exec(ctx, shiftRoutineExerciseOrderUp, arg.RoutineID, arg.Order)
+	return err
+}
+
 const updateExercise = `-- name: UpdateExercise :one
 UPDATE exercise
 SET name = $2, target_muscle = $3, notes = $4
@@ -626,6 +805,49 @@ func (q *Queries) UpdateExercise(ctx context.Context, arg UpdateExerciseParams) 
 		&i.TargetMuscle,
 		&i.Notes,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateRoutine = `-- name: UpdateRoutine :one
+UPDATE routine
+SET name = $2
+WHERE id = $1
+RETURNING id, name, created_at
+`
+
+type UpdateRoutineParams struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+func (q *Queries) UpdateRoutine(ctx context.Context, arg UpdateRoutineParams) (Routine, error) {
+	row := q.db.QueryRow(ctx, updateRoutine, arg.ID, arg.Name)
+	var i Routine
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
+const updateRoutineExerciseOrder = `-- name: UpdateRoutineExerciseOrder :one
+UPDATE routine_exercise
+SET "order" = $2
+WHERE id = $1
+RETURNING id, routine_id, exercise_id, "order"
+`
+
+type UpdateRoutineExerciseOrderParams struct {
+	ID    uuid.UUID `json:"id"`
+	Order int32     `json:"order"`
+}
+
+func (q *Queries) UpdateRoutineExerciseOrder(ctx context.Context, arg UpdateRoutineExerciseOrderParams) (RoutineExercise, error) {
+	row := q.db.QueryRow(ctx, updateRoutineExerciseOrder, arg.ID, arg.Order)
+	var i RoutineExercise
+	err := row.Scan(
+		&i.ID,
+		&i.RoutineID,
+		&i.ExerciseID,
+		&i.Order,
 	)
 	return i, err
 }

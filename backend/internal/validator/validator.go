@@ -29,3 +29,9 @@ func ValidateExercise(name, targetMuscle, notes string) error {
 	}
 	return nil
 }
+
+// ValidateRoutineName validates a routine name.
+func ValidateRoutineName(name string) error {
+	name = strings.TrimSpace(name)
+	return validation.Validate(name, validation.Required, validation.Length(1, 255))
+}

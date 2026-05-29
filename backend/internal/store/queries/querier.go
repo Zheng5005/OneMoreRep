@@ -13,7 +13,9 @@ import (
 
 type Querier interface {
 	CountExercises(ctx context.Context, dollar_1 string) (int64, error)
+	CountRoutineExercises(ctx context.Context, routineID uuid.UUID) (int64, error)
 	CountRoutineExercisesByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error)
+	CountRoutines(ctx context.Context) (int64, error)
 	CountWorkoutSetsByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error)
 	CreateExercise(ctx context.Context, arg CreateExerciseParams) (Exercise, error)
 	CreateRoutine(ctx context.Context, name string) (Routine, error)
@@ -21,23 +23,34 @@ type Querier interface {
 	CreateWorkoutSession(ctx context.Context, routineID pgtype.UUID) (WorkoutSession, error)
 	CreateWorkoutSet(ctx context.Context, arg CreateWorkoutSetParams) (WorkoutSet, error)
 	DeleteExercise(ctx context.Context, id uuid.UUID) error
+	DeleteRoutine(ctx context.Context, id uuid.UUID) error
+	DeleteRoutineExercise(ctx context.Context, id uuid.UUID) error
 	EndWorkoutSession(ctx context.Context, id uuid.UUID) (WorkoutSession, error)
 	GetExercise(ctx context.Context, id uuid.UUID) (Exercise, error)
 	GetExerciseByNameAndMuscle(ctx context.Context, arg GetExerciseByNameAndMuscleParams) (Exercise, error)
 	GetQuote(ctx context.Context, id uuid.UUID) (Quote, error)
 	GetRandomQuote(ctx context.Context) (Quote, error)
 	GetRoutine(ctx context.Context, id uuid.UUID) (Routine, error)
+	GetRoutineExercise(ctx context.Context, arg GetRoutineExerciseParams) (RoutineExercise, error)
+	GetRoutineExerciseByExercise(ctx context.Context, arg GetRoutineExerciseByExerciseParams) (RoutineExercise, error)
 	GetWorkoutSession(ctx context.Context, id uuid.UUID) (WorkoutSession, error)
 	ListExercises(ctx context.Context) ([]Exercise, error)
 	ListQuotes(ctx context.Context) ([]Quote, error)
 	ListRoutineExercises(ctx context.Context, routineID uuid.UUID) ([]ListRoutineExercisesRow, error)
 	ListRoutines(ctx context.Context) ([]Routine, error)
+	ListRoutinesPaginated(ctx context.Context, arg ListRoutinesPaginatedParams) ([]Routine, error)
 	ListWorkoutSessions(ctx context.Context) ([]WorkoutSession, error)
 	ListWorkoutSetsByExercise(ctx context.Context, exerciseID uuid.UUID) ([]ListWorkoutSetsByExerciseRow, error)
 	ListWorkoutSetsBySession(ctx context.Context, sessionID uuid.UUID) ([]ListWorkoutSetsBySessionRow, error)
 	Ping(ctx context.Context) (int32, error)
+	ReorderRoutineExerciseBackward(ctx context.Context, arg ReorderRoutineExerciseBackwardParams) error
+	ReorderRoutineExerciseForward(ctx context.Context, arg ReorderRoutineExerciseForwardParams) error
 	SearchExercises(ctx context.Context, arg SearchExercisesParams) ([]Exercise, error)
+	ShiftRoutineExerciseOrderDown(ctx context.Context, arg ShiftRoutineExerciseOrderDownParams) error
+	ShiftRoutineExerciseOrderUp(ctx context.Context, arg ShiftRoutineExerciseOrderUpParams) error
 	UpdateExercise(ctx context.Context, arg UpdateExerciseParams) (Exercise, error)
+	UpdateRoutine(ctx context.Context, arg UpdateRoutineParams) (Routine, error)
+	UpdateRoutineExerciseOrder(ctx context.Context, arg UpdateRoutineExerciseOrderParams) (RoutineExercise, error)
 }
 
 var _ Querier = (*Queries)(nil)
