@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: onemorerep-postgres
+    environment:
+      POSTGRES_USER: onemorerep
+      POSTGRES_PASSWORD: onemorerep
+      POSTGRES_DB: onemorerep
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onemorerep -d onemorerep"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: onemorerep-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    container_name: onemorerep-backend
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://onemorerep:onemorerep@postgres:5432/onemorerep?sslmode=disable
+      LOG_LEVEL: debug
+      ALLOWED_ORIGINS: "*"
+      AUTO_MIGRATE: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: onemorerep-web
+    environment:
+      VITE_API_URL: http://localhost:8080
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    command: ["pnpm", "dev", "--host", "0.0.0.0"]
+
+volumes:
+  postgres_data:
+  redis_data:
+  go_mod_cache:
