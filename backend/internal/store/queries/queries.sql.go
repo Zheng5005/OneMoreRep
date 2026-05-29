@@ -299,6 +299,27 @@ func (q *Queries) GetExerciseByNameAndMuscle(ctx context.Context, arg GetExercis
 	return i, err
 }
 
+const getExerciseLastValues = `-- name: GetExerciseLastValues :one
+SELECT ws.weight, ws.reps
+FROM workout_set ws
+JOIN workout_session s ON ws.session_id = s.id
+WHERE ws.exercise_id = $1 AND s.ended_at IS NOT NULL
+ORDER BY s.started_at DESC, ws.created_at DESC
+LIMIT 1
+`
+
+type GetExerciseLastValuesRow struct {
+	Weight pgtype.Numeric `json:"weight"`
+	Reps   int32          `json:"reps"`
+}
+
+func (q *Queries) GetExerciseLastValues(ctx context.Context, exerciseID uuid.UUID) (GetExerciseLastValuesRow, error) {
+	row := q.db.QueryRow(ctx, getExerciseLastValues, exerciseID)
+	var i GetExerciseLastValuesRow
+	err := row.Scan(&i.Weight, &i.Reps)
+	return i, err
+}
+
 const getMaxSetNumber = `-- name: GetMaxSetNumber :one
 SELECT COALESCE(MAX(set_number), 0) FROM workout_set
 WHERE session_id = $1 AND exercise_id = $2
@@ -399,6 +420,94 @@ func (q *Queries) GetRoutineExerciseByExercise(ctx context.Context, arg GetRouti
 		&i.RoutineID,
 		&i.ExerciseID,
 		&i.Order,
+	)
+	return i, err
+}
+
+const getSessionExerciseBreakdown = `-- name: GetSessionExerciseBreakdown :many
+SELECT
+  ws.exercise_id,
+  e.name as exercise_name,
+  COUNT(ws.id) as sets_count,
+  MAX(ws.weight * ws.reps) as best_volume,
+  MAX(ws.weight) as best_weight,
+  MAX(ws.reps) as best_reps
+FROM workout_set ws
+JOIN exercise e ON ws.exercise_id = e.id
+WHERE ws.session_id = $1
+GROUP BY ws.exercise_id, e.name
+ORDER BY e.name
+`
+
+type GetSessionExerciseBreakdownRow struct {
+	ExerciseID   uuid.UUID   `json:"exercise_id"`
+	ExerciseName string      `json:"exercise_name"`
+	SetsCount    int64       `json:"sets_count"`
+	BestVolume   interface{} `json:"best_volume"`
+	BestWeight   interface{} `json:"best_weight"`
+	BestReps     interface{} `json:"best_reps"`
+}
+
+func (q *Queries) GetSessionExerciseBreakdown(ctx context.Context, sessionID uuid.UUID) ([]GetSessionExerciseBreakdownRow, error) {
+	rows, err := q.db.Query(ctx, getSessionExerciseBreakdown, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetSessionExerciseBreakdownRow{}
+	for rows.Next() {
+		var i GetSessionExerciseBreakdownRow
+		if err := rows.Scan(
+			&i.ExerciseID,
+			&i.ExerciseName,
+			&i.SetsCount,
+			&i.BestVolume,
+			&i.BestWeight,
+			&i.BestReps,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSessionSummary = `-- name: GetSessionSummary :one
+SELECT
+  s.id as session_id,
+  s.started_at,
+  s.ended_at,
+  COUNT(DISTINCT ws.exercise_id) as exercise_count,
+  COUNT(ws.id) as total_sets,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE s.id = $1
+GROUP BY s.id, s.started_at, s.ended_at
+`
+
+type GetSessionSummaryRow struct {
+	SessionID     uuid.UUID          `json:"session_id"`
+	StartedAt     time.Time          `json:"started_at"`
+	EndedAt       pgtype.Timestamptz `json:"ended_at"`
+	ExerciseCount int64              `json:"exercise_count"`
+	TotalSets     int64              `json:"total_sets"`
+	TotalVolume   interface{}        `json:"total_volume"`
+}
+
+func (q *Queries) GetSessionSummary(ctx context.Context, id uuid.UUID) (GetSessionSummaryRow, error) {
+	row := q.db.QueryRow(ctx, getSessionSummary, id)
+	var i GetSessionSummaryRow
+	err := row.Scan(
+		&i.SessionID,
+		&i.StartedAt,
+		&i.EndedAt,
+		&i.ExerciseCount,
+		&i.TotalSets,
+		&i.TotalVolume,
 	)
 	return i, err
 }

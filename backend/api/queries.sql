@@ -217,3 +217,38 @@ WHERE session_id = $1 AND exercise_id = $2 AND set_number > $3;
 -- name: GetMaxSetNumber :one
 SELECT COALESCE(MAX(set_number), 0) FROM workout_set
 WHERE session_id = $1 AND exercise_id = $2;
+
+-- name: GetExerciseLastValues :one
+SELECT ws.weight, ws.reps
+FROM workout_set ws
+JOIN workout_session s ON ws.session_id = s.id
+WHERE ws.exercise_id = $1 AND s.ended_at IS NOT NULL
+ORDER BY s.started_at DESC, ws.created_at DESC
+LIMIT 1;
+
+-- name: GetSessionSummary :one
+SELECT
+  s.id as session_id,
+  s.started_at,
+  s.ended_at,
+  COUNT(DISTINCT ws.exercise_id) as exercise_count,
+  COUNT(ws.id) as total_sets,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE s.id = $1
+GROUP BY s.id, s.started_at, s.ended_at;
+
+-- name: GetSessionExerciseBreakdown :many
+SELECT
+  ws.exercise_id,
+  e.name as exercise_name,
+  COUNT(ws.id) as sets_count,
+  MAX(ws.weight * ws.reps) as best_volume,
+  MAX(ws.weight) as best_weight,
+  MAX(ws.reps) as best_reps
+FROM workout_set ws
+JOIN exercise e ON ws.exercise_id = e.id
+WHERE ws.session_id = $1
+GROUP BY ws.exercise_id, e.name
+ORDER BY e.name;
