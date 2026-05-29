@@ -25,15 +25,20 @@ type Querier interface {
 	DeleteExercise(ctx context.Context, id uuid.UUID) error
 	DeleteRoutine(ctx context.Context, id uuid.UUID) error
 	DeleteRoutineExercise(ctx context.Context, id uuid.UUID) error
+	DeleteWorkoutSet(ctx context.Context, id uuid.UUID) error
 	EndWorkoutSession(ctx context.Context, id uuid.UUID) (WorkoutSession, error)
+	GetActiveWorkoutSession(ctx context.Context) (WorkoutSession, error)
 	GetExercise(ctx context.Context, id uuid.UUID) (Exercise, error)
 	GetExerciseByNameAndMuscle(ctx context.Context, arg GetExerciseByNameAndMuscleParams) (Exercise, error)
+	GetMaxSetNumber(ctx context.Context, arg GetMaxSetNumberParams) (interface{}, error)
 	GetQuote(ctx context.Context, id uuid.UUID) (Quote, error)
 	GetRandomQuote(ctx context.Context) (Quote, error)
 	GetRoutine(ctx context.Context, id uuid.UUID) (Routine, error)
 	GetRoutineExercise(ctx context.Context, arg GetRoutineExerciseParams) (RoutineExercise, error)
 	GetRoutineExerciseByExercise(ctx context.Context, arg GetRoutineExerciseByExerciseParams) (RoutineExercise, error)
+	GetSessionWithSets(ctx context.Context, id uuid.UUID) (GetSessionWithSetsRow, error)
 	GetWorkoutSession(ctx context.Context, id uuid.UUID) (WorkoutSession, error)
+	GetWorkoutSet(ctx context.Context, id uuid.UUID) (WorkoutSet, error)
 	ListExercises(ctx context.Context) ([]Exercise, error)
 	ListQuotes(ctx context.Context) ([]Quote, error)
 	ListRoutineExercises(ctx context.Context, routineID uuid.UUID) ([]ListRoutineExercisesRow, error)
@@ -43,6 +48,7 @@ type Querier interface {
 	ListWorkoutSetsByExercise(ctx context.Context, exerciseID uuid.UUID) ([]ListWorkoutSetsByExerciseRow, error)
 	ListWorkoutSetsBySession(ctx context.Context, sessionID uuid.UUID) ([]ListWorkoutSetsBySessionRow, error)
 	Ping(ctx context.Context) (int32, error)
+	RenumberWorkoutSets(ctx context.Context, arg RenumberWorkoutSetsParams) error
 	ReorderRoutineExerciseBackward(ctx context.Context, arg ReorderRoutineExerciseBackwardParams) error
 	ReorderRoutineExerciseForward(ctx context.Context, arg ReorderRoutineExerciseForwardParams) error
 	SearchExercises(ctx context.Context, arg SearchExercisesParams) ([]Exercise, error)
@@ -51,6 +57,7 @@ type Querier interface {
 	UpdateExercise(ctx context.Context, arg UpdateExerciseParams) (Exercise, error)
 	UpdateRoutine(ctx context.Context, arg UpdateRoutineParams) (Routine, error)
 	UpdateRoutineExerciseOrder(ctx context.Context, arg UpdateRoutineExerciseOrderParams) (RoutineExercise, error)
+	UpdateWorkoutSet(ctx context.Context, arg UpdateWorkoutSetParams) (WorkoutSet, error)
 }
 
 var _ Querier = (*Queries)(nil)

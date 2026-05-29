@@ -170,3 +170,50 @@ FROM workout_set ws
 JOIN workout_session s ON ws.session_id = s.id
 WHERE ws.exercise_id = $1
 ORDER BY ws.created_at DESC;
+
+-- name: GetActiveWorkoutSession :one
+SELECT * FROM workout_session
+WHERE ended_at IS NULL
+ORDER BY started_at DESC
+LIMIT 1;
+
+-- name: GetSessionWithSets :one
+SELECT ws.*,
+       COALESCE(json_agg(
+         json_build_object(
+           'id', ws2.id,
+           'session_id', ws2.session_id,
+           'exercise_id', ws2.exercise_id,
+           'set_number', ws2.set_number,
+           'weight', ws2.weight,
+           'reps', ws2.reps,
+           'created_at', ws2.created_at,
+           'exercise_name', e.name
+         ) ORDER BY ws2.created_at
+       ) FILTER (WHERE ws2.id IS NOT NULL), '[]') as sets
+FROM workout_session ws
+LEFT JOIN workout_set ws2 ON ws.id = ws2.session_id
+LEFT JOIN exercise e ON ws2.exercise_id = e.id
+WHERE ws.id = $1
+GROUP BY ws.id;
+
+-- name: GetWorkoutSet :one
+SELECT * FROM workout_set WHERE id = $1;
+
+-- name: UpdateWorkoutSet :one
+UPDATE workout_set
+SET weight = $2, reps = $3
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteWorkoutSet :exec
+DELETE FROM workout_set WHERE id = $1;
+
+-- name: RenumberWorkoutSets :exec
+UPDATE workout_set
+SET set_number = set_number - 1
+WHERE session_id = $1 AND exercise_id = $2 AND set_number > $3;
+
+-- name: GetMaxSetNumber :one
+SELECT COALESCE(MAX(set_number), 0) FROM workout_set
+WHERE session_id = $1 AND exercise_id = $2;

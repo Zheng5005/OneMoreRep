@@ -211,6 +211,15 @@ func (q *Queries) DeleteRoutineExercise(ctx context.Context, id uuid.UUID) error
 	return err
 }
 
+const deleteWorkoutSet = `-- name: DeleteWorkoutSet :exec
+DELETE FROM workout_set WHERE id = $1
+`
+
+func (q *Queries) DeleteWorkoutSet(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorkoutSet, id)
+	return err
+}
+
 const endWorkoutSession = `-- name: EndWorkoutSession :one
 UPDATE workout_session
 SET ended_at = NOW()
@@ -220,6 +229,25 @@ RETURNING id, routine_id, started_at, ended_at
 
 func (q *Queries) EndWorkoutSession(ctx context.Context, id uuid.UUID) (WorkoutSession, error) {
 	row := q.db.QueryRow(ctx, endWorkoutSession, id)
+	var i WorkoutSession
+	err := row.Scan(
+		&i.ID,
+		&i.RoutineID,
+		&i.StartedAt,
+		&i.EndedAt,
+	)
+	return i, err
+}
+
+const getActiveWorkoutSession = `-- name: GetActiveWorkoutSession :one
+SELECT id, routine_id, started_at, ended_at FROM workout_session
+WHERE ended_at IS NULL
+ORDER BY started_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetActiveWorkoutSession(ctx context.Context) (WorkoutSession, error) {
+	row := q.db.QueryRow(ctx, getActiveWorkoutSession)
 	var i WorkoutSession
 	err := row.Scan(
 		&i.ID,
@@ -269,6 +297,23 @@ func (q *Queries) GetExerciseByNameAndMuscle(ctx context.Context, arg GetExercis
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getMaxSetNumber = `-- name: GetMaxSetNumber :one
+SELECT COALESCE(MAX(set_number), 0) FROM workout_set
+WHERE session_id = $1 AND exercise_id = $2
+`
+
+type GetMaxSetNumberParams struct {
+	SessionID  uuid.UUID `json:"session_id"`
+	ExerciseID uuid.UUID `json:"exercise_id"`
+}
+
+func (q *Queries) GetMaxSetNumber(ctx context.Context, arg GetMaxSetNumberParams) (interface{}, error) {
+	row := q.db.QueryRow(ctx, getMaxSetNumber, arg.SessionID, arg.ExerciseID)
+	var coalesce interface{}
+	err := row.Scan(&coalesce)
+	return coalesce, err
 }
 
 const getQuote = `-- name: GetQuote :one
@@ -358,6 +403,48 @@ func (q *Queries) GetRoutineExerciseByExercise(ctx context.Context, arg GetRouti
 	return i, err
 }
 
+const getSessionWithSets = `-- name: GetSessionWithSets :one
+SELECT ws.id, ws.routine_id, ws.started_at, ws.ended_at,
+       COALESCE(json_agg(
+         json_build_object(
+           'id', ws2.id,
+           'session_id', ws2.session_id,
+           'exercise_id', ws2.exercise_id,
+           'set_number', ws2.set_number,
+           'weight', ws2.weight,
+           'reps', ws2.reps,
+           'created_at', ws2.created_at,
+           'exercise_name', e.name
+         ) ORDER BY ws2.created_at
+       ) FILTER (WHERE ws2.id IS NOT NULL), '[]') as sets
+FROM workout_session ws
+LEFT JOIN workout_set ws2 ON ws.id = ws2.session_id
+LEFT JOIN exercise e ON ws2.exercise_id = e.id
+WHERE ws.id = $1
+GROUP BY ws.id
+`
+
+type GetSessionWithSetsRow struct {
+	ID        uuid.UUID          `json:"id"`
+	RoutineID pgtype.UUID        `json:"routine_id"`
+	StartedAt time.Time          `json:"started_at"`
+	EndedAt   pgtype.Timestamptz `json:"ended_at"`
+	Sets      interface{}        `json:"sets"`
+}
+
+func (q *Queries) GetSessionWithSets(ctx context.Context, id uuid.UUID) (GetSessionWithSetsRow, error) {
+	row := q.db.QueryRow(ctx, getSessionWithSets, id)
+	var i GetSessionWithSetsRow
+	err := row.Scan(
+		&i.ID,
+		&i.RoutineID,
+		&i.StartedAt,
+		&i.EndedAt,
+		&i.Sets,
+	)
+	return i, err
+}
+
 const getWorkoutSession = `-- name: GetWorkoutSession :one
 SELECT id, routine_id, started_at, ended_at FROM workout_session WHERE id = $1
 `
@@ -370,6 +457,25 @@ func (q *Queries) GetWorkoutSession(ctx context.Context, id uuid.UUID) (WorkoutS
 		&i.RoutineID,
 		&i.StartedAt,
 		&i.EndedAt,
+	)
+	return i, err
+}
+
+const getWorkoutSet = `-- name: GetWorkoutSet :one
+SELECT id, session_id, exercise_id, set_number, weight, reps, created_at FROM workout_set WHERE id = $1
+`
+
+func (q *Queries) GetWorkoutSet(ctx context.Context, id uuid.UUID) (WorkoutSet, error) {
+	row := q.db.QueryRow(ctx, getWorkoutSet, id)
+	var i WorkoutSet
+	err := row.Scan(
+		&i.ID,
+		&i.SessionID,
+		&i.ExerciseID,
+		&i.SetNumber,
+		&i.Weight,
+		&i.Reps,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -672,6 +778,23 @@ func (q *Queries) Ping(ctx context.Context) (int32, error) {
 	return column_1, err
 }
 
+const renumberWorkoutSets = `-- name: RenumberWorkoutSets :exec
+UPDATE workout_set
+SET set_number = set_number - 1
+WHERE session_id = $1 AND exercise_id = $2 AND set_number > $3
+`
+
+type RenumberWorkoutSetsParams struct {
+	SessionID  uuid.UUID `json:"session_id"`
+	ExerciseID uuid.UUID `json:"exercise_id"`
+	SetNumber  int32     `json:"set_number"`
+}
+
+func (q *Queries) RenumberWorkoutSets(ctx context.Context, arg RenumberWorkoutSetsParams) error {
+	_, err := q.db.Exec(ctx, renumberWorkoutSets, arg.SessionID, arg.ExerciseID, arg.SetNumber)
+	return err
+}
+
 const reorderRoutineExerciseBackward = `-- name: ReorderRoutineExerciseBackward :exec
 UPDATE routine_exercise
 SET "order" = "order" + 1
@@ -848,6 +971,34 @@ func (q *Queries) UpdateRoutineExerciseOrder(ctx context.Context, arg UpdateRout
 		&i.RoutineID,
 		&i.ExerciseID,
 		&i.Order,
+	)
+	return i, err
+}
+
+const updateWorkoutSet = `-- name: UpdateWorkoutSet :one
+UPDATE workout_set
+SET weight = $2, reps = $3
+WHERE id = $1
+RETURNING id, session_id, exercise_id, set_number, weight, reps, created_at
+`
+
+type UpdateWorkoutSetParams struct {
+	ID     uuid.UUID      `json:"id"`
+	Weight pgtype.Numeric `json:"weight"`
+	Reps   int32          `json:"reps"`
+}
+
+func (q *Queries) UpdateWorkoutSet(ctx context.Context, arg UpdateWorkoutSetParams) (WorkoutSet, error) {
+	row := q.db.QueryRow(ctx, updateWorkoutSet, arg.ID, arg.Weight, arg.Reps)
+	var i WorkoutSet
+	err := row.Scan(
+		&i.ID,
+		&i.SessionID,
+		&i.ExerciseID,
+		&i.SetNumber,
+		&i.Weight,
+		&i.Reps,
+		&i.CreatedAt,
 	)
 	return i, err
 }

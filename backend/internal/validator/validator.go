@@ -35,3 +35,20 @@ func ValidateRoutineName(name string) error {
 	name = strings.TrimSpace(name)
 	return validation.Validate(name, validation.Required, validation.Length(1, 255))
 }
+
+// ValidateWorkoutSet validates workout set input fields.
+func ValidateWorkoutSet(weight float64, reps int) error {
+	errs := validation.Errors{}
+
+	if err := validation.Validate(weight, validation.Required, validation.Min(0.0), validation.Max(9999.99)); err != nil {
+		errs["weight"] = err
+	}
+	if err := validation.Validate(reps, validation.Required, validation.Min(1)); err != nil {
+		errs["reps"] = err
+	}
+
+	if len(errs) > 0 {
+		return errs
+	}
+	return nil
+}
