@@ -16,6 +16,14 @@
       "sessions": 2,
       "memories": 0,
       "prompts": 0
+    },
+    {
+      "id": "f04ee45f",
+      "created_by": "zheng5005",
+      "created_at": "2026-05-29T21:41:59Z",
+      "sessions": 1,
+      "memories": 1,
+      "prompts": 0
     }
   ]
 }
