@@ -12,6 +12,9 @@ import (
 )
 
 type Querier interface {
+	CountExercises(ctx context.Context, dollar_1 string) (int64, error)
+	CountRoutineExercisesByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error)
+	CountWorkoutSetsByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error)
 	CreateExercise(ctx context.Context, arg CreateExerciseParams) (Exercise, error)
 	CreateRoutine(ctx context.Context, name string) (Routine, error)
 	CreateRoutineExercise(ctx context.Context, arg CreateRoutineExerciseParams) (RoutineExercise, error)
@@ -20,6 +23,7 @@ type Querier interface {
 	DeleteExercise(ctx context.Context, id uuid.UUID) error
 	EndWorkoutSession(ctx context.Context, id uuid.UUID) (WorkoutSession, error)
 	GetExercise(ctx context.Context, id uuid.UUID) (Exercise, error)
+	GetExerciseByNameAndMuscle(ctx context.Context, arg GetExerciseByNameAndMuscleParams) (Exercise, error)
 	GetQuote(ctx context.Context, id uuid.UUID) (Quote, error)
 	GetRandomQuote(ctx context.Context) (Quote, error)
 	GetRoutine(ctx context.Context, id uuid.UUID) (Routine, error)
@@ -32,6 +36,7 @@ type Querier interface {
 	ListWorkoutSetsByExercise(ctx context.Context, exerciseID uuid.UUID) ([]ListWorkoutSetsByExerciseRow, error)
 	ListWorkoutSetsBySession(ctx context.Context, sessionID uuid.UUID) ([]ListWorkoutSetsBySessionRow, error)
 	Ping(ctx context.Context) (int32, error)
+	SearchExercises(ctx context.Context, arg SearchExercisesParams) ([]Exercise, error)
 	UpdateExercise(ctx context.Context, arg UpdateExerciseParams) (Exercise, error)
 }
 

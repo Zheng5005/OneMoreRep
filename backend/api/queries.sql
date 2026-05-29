@@ -34,6 +34,27 @@ RETURNING *;
 -- name: DeleteExercise :exec
 DELETE FROM exercise WHERE id = $1;
 
+-- name: SearchExercises :many
+SELECT * FROM exercise
+WHERE ($1::text = '' OR name ILIKE '%' || $1 || '%')
+ORDER BY name
+LIMIT $2 OFFSET $3;
+
+-- name: CountExercises :one
+SELECT COUNT(*) FROM exercise
+WHERE ($1::text = '' OR name ILIKE '%' || $1 || '%');
+
+-- name: GetExerciseByNameAndMuscle :one
+SELECT * FROM exercise
+WHERE name = @name AND target_muscle = @target_muscle
+LIMIT 1;
+
+-- name: CountRoutineExercisesByExercise :one
+SELECT COUNT(*) FROM routine_exercise WHERE exercise_id = @exercise_id;
+
+-- name: CountWorkoutSetsByExercise :one
+SELECT COUNT(*) FROM workout_set WHERE exercise_id = @exercise_id;
+
 -- name: CreateRoutine :one
 INSERT INTO routine (name)
 VALUES ($1)

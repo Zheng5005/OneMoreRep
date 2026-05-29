@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Zheng5005/onemorerep/internal/store/queries"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -41,6 +42,11 @@ func (d *DB) Ping(ctx context.Context) error {
 // Pool returns the underlying connection pool.
 func (d *DB) Pool() *pgxpool.Pool {
 	return d.pool
+}
+
+// Queries returns a new sqlc Queries instance backed by the connection pool.
+func (d *DB) Queries() *queries.Queries {
+	return queries.New(d.pool)
 }
 
 // WithTx executes the given function inside a database transaction.

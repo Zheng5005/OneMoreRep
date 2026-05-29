@@ -13,6 +13,40 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countExercises = `-- name: CountExercises :one
+SELECT COUNT(*) FROM exercise
+WHERE ($1::text = '' OR name ILIKE '%' || $1 || '%')
+`
+
+func (q *Queries) CountExercises(ctx context.Context, dollar_1 string) (int64, error) {
+	row := q.db.QueryRow(ctx, countExercises, dollar_1)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countRoutineExercisesByExercise = `-- name: CountRoutineExercisesByExercise :one
+SELECT COUNT(*) FROM routine_exercise WHERE exercise_id = $1
+`
+
+func (q *Queries) CountRoutineExercisesByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countRoutineExercisesByExercise, exerciseID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countWorkoutSetsByExercise = `-- name: CountWorkoutSetsByExercise :one
+SELECT COUNT(*) FROM workout_set WHERE exercise_id = $1
+`
+
+func (q *Queries) CountWorkoutSetsByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countWorkoutSetsByExercise, exerciseID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createExercise = `-- name: CreateExercise :one
 INSERT INTO exercise (name, target_muscle, notes)
 VALUES ($1, $2, $3)
@@ -162,6 +196,30 @@ SELECT id, name, target_muscle, notes, created_at FROM exercise WHERE id = $1
 
 func (q *Queries) GetExercise(ctx context.Context, id uuid.UUID) (Exercise, error) {
 	row := q.db.QueryRow(ctx, getExercise, id)
+	var i Exercise
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.TargetMuscle,
+		&i.Notes,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getExerciseByNameAndMuscle = `-- name: GetExerciseByNameAndMuscle :one
+SELECT id, name, target_muscle, notes, created_at FROM exercise
+WHERE name = $1 AND target_muscle = $2
+LIMIT 1
+`
+
+type GetExerciseByNameAndMuscleParams struct {
+	Name         string      `json:"name"`
+	TargetMuscle pgtype.Text `json:"target_muscle"`
+}
+
+func (q *Queries) GetExerciseByNameAndMuscle(ctx context.Context, arg GetExerciseByNameAndMuscleParams) (Exercise, error) {
+	row := q.db.QueryRow(ctx, getExerciseByNameAndMuscle, arg.Name, arg.TargetMuscle)
 	var i Exercise
 	err := row.Scan(
 		&i.ID,
@@ -499,6 +557,45 @@ func (q *Queries) Ping(ctx context.Context) (int32, error) {
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const searchExercises = `-- name: SearchExercises :many
+SELECT id, name, target_muscle, notes, created_at FROM exercise
+WHERE ($1::text = '' OR name ILIKE '%' || $1 || '%')
+ORDER BY name
+LIMIT $2 OFFSET $3
+`
+
+type SearchExercisesParams struct {
+	Column1 string `json:"column_1"`
+	Limit   int32  `json:"limit"`
+	Offset  int32  `json:"offset"`
+}
+
+func (q *Queries) SearchExercises(ctx context.Context, arg SearchExercisesParams) ([]Exercise, error) {
+	rows, err := q.db.Query(ctx, searchExercises, arg.Column1, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Exercise{}
+	for rows.Next() {
+		var i Exercise
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.TargetMuscle,
+			&i.Notes,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateExercise = `-- name: UpdateExercise :one
