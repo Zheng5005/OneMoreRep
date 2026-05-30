@@ -1,0 +1,48 @@
+.routine-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: box-shadow 0.15s ease;
+}
+
+.routine-card:hover {
+  box-shadow: var(--shadow);
+}
+
+.routine-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.routine-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 4px;
+}
+
+.routine-exercises {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.routine-date {
+  display: block;
+  font-size: 12px;
+  color: var(--text-s);
+}
+
+.routine-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}

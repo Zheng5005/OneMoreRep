@@ -1,0 +1,68 @@
+.routine-list {
+  padding: 24px;
+}
+
+.routine-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.routine-list-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.routine-list-loading,
+.routine-list-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+}
+
+.routine-list-loading p,
+.routine-list-error p {
+  color: var(--text-muted);
+  margin: 16px 0 0;
+}
+
+.routine-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+.routine-list-empty .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.routine-list-empty h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+
+.routine-list-empty p {
+  color: var(--text-muted);
+  margin: 0 0 24px;
+}
+
+.routine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}

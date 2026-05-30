@@ -16,6 +16,7 @@ export interface RoutineSlice {
   selectRoutine: (routine: Routine | null) => void;
   addExerciseToRoutine: (routineId: string, exerciseId: string, order?: number) => Promise<Routine>;
   removeExerciseFromRoutine: (routineId: string, routineExerciseId: string) => Promise<void>;
+  reorderExercises: (routineId: string, exerciseIds: string[]) => Promise<void>;
 }
 
 export const createRoutineSlice: StateCreator<AllSlices, [], [], RoutineSlice> = (set) => ({
@@ -79,6 +80,14 @@ export const createRoutineSlice: StateCreator<AllSlices, [], [], RoutineSlice> =
   removeExerciseFromRoutine: async (routineId, routineExerciseId) => {
     await routineApi.removeExercise(routineId, routineExerciseId);
     const routine = await routineApi.get(routineId);
+    set((state) => ({
+      routines: state.routines.map((r) => (r.id === routineId ? routine : r)),
+      selectedRoutine: state.selectedRoutine?.id === routineId ? routine : state.selectedRoutine,
+    }));
+  },
+
+  reorderExercises: async (routineId, exerciseIds) => {
+    const routine = await routineApi.reorderExercises(routineId, exerciseIds);
     set((state) => ({
       routines: state.routines.map((r) => (r.id === routineId ? routine : r)),
       selectedRoutine: state.selectedRoutine?.id === routineId ? routine : state.selectedRoutine,

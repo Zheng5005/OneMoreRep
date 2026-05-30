@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ExerciseList } from './components/features/exercise/ExerciseList';
+import { RoutineList } from './components/features/routine/RoutineList';
 import './App.css';
 
 type Tab = 'exercises' | 'routines' | 'history';
@@ -35,12 +36,7 @@ function App() {
 
       <main className="app-main">
         {activeTab === 'exercises' && <ExerciseList />}
-        {activeTab === 'routines' && (
-          <div className="placeholder">
-            <h2>Routines</h2>
-            <p>Coming soon...</p>
-          </div>
-        )}
+        {activeTab === 'routines' && <RoutineList />}
         {activeTab === 'history' && (
           <div className="placeholder">
             <h2>History</h2>
