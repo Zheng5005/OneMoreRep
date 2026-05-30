@@ -25,6 +25,18 @@ func (q *Queries) CountExercises(ctx context.Context, dollar_1 string) (int64, e
 	return count, err
 }
 
+const countQuotes = `-- name: CountQuotes :one
+SELECT COUNT(*) FROM quote
+WHERE ($1::text = '' OR category = $1)
+`
+
+func (q *Queries) CountQuotes(ctx context.Context, dollar_1 string) (int64, error) {
+	row := q.db.QueryRow(ctx, countQuotes, dollar_1)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countRoutineExercises = `-- name: CountRoutineExercises :one
 SELECT COUNT(*) FROM routine_exercise WHERE routine_id = $1
 `
@@ -804,6 +816,44 @@ ORDER BY author, text
 
 func (q *Queries) ListQuotes(ctx context.Context) ([]Quote, error) {
 	rows, err := q.db.Query(ctx, listQuotes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Quote{}
+	for rows.Next() {
+		var i Quote
+		if err := rows.Scan(
+			&i.ID,
+			&i.Text,
+			&i.Author,
+			&i.Category,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listQuotesPaginated = `-- name: ListQuotesPaginated :many
+SELECT id, text, author, category FROM quote
+WHERE ($1::text = '' OR category = $1)
+ORDER BY author, text
+LIMIT $2 OFFSET $3
+`
+
+type ListQuotesPaginatedParams struct {
+	Column1 string `json:"column_1"`
+	Limit   int32  `json:"limit"`
+	Offset  int32  `json:"offset"`
+}
+
+func (q *Queries) ListQuotesPaginated(ctx context.Context, arg ListQuotesPaginatedParams) ([]Quote, error) {
+	rows, err := q.db.Query(ctx, listQuotesPaginated, arg.Column1, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

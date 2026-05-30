@@ -26,6 +26,9 @@ func registerRoutes(r chi.Router, db *store.DB) {
 	progressSvc := service.NewProgressService(q)
 	progressHandler := handler.NewProgress(progressSvc)
 
+	quoteSvc := service.NewQuoteService(q)
+	quoteHandler := handler.NewQuote(quoteSvc)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", h.Health)
 
@@ -43,6 +46,11 @@ func registerRoutes(r chi.Router, db *store.DB) {
 
 		r.Route("/progress", func(r chi.Router) {
 			r.Get("/volume", progressHandler.GetVolumeAggregation)
+		})
+
+		r.Route("/quotes", func(r chi.Router) {
+			r.Get("/random", quoteHandler.Random)
+			r.Get("/", quoteHandler.List)
 		})
 
 		r.Route("/routines", func(r chi.Router) {

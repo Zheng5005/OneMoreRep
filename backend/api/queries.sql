@@ -13,6 +13,16 @@ ORDER BY author, text;
 -- name: GetQuote :one
 SELECT * FROM quote WHERE id = $1;
 
+-- name: ListQuotesPaginated :many
+SELECT * FROM quote
+WHERE ($1::text = '' OR category = $1)
+ORDER BY author, text
+LIMIT $2 OFFSET $3;
+
+-- name: CountQuotes :one
+SELECT COUNT(*) FROM quote
+WHERE ($1::text = '' OR category = $1);
+
 -- name: CreateExercise :one
 INSERT INTO exercise (name, target_muscle, notes)
 VALUES ($1, $2, $3)

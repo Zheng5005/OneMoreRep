@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	CountExercises(ctx context.Context, dollar_1 string) (int64, error)
+	CountQuotes(ctx context.Context, dollar_1 string) (int64, error)
 	CountRoutineExercises(ctx context.Context, routineID uuid.UUID) (int64, error)
 	CountRoutineExercisesByExercise(ctx context.Context, exerciseID uuid.UUID) (int64, error)
 	CountRoutines(ctx context.Context) (int64, error)
@@ -48,6 +49,7 @@ type Querier interface {
 	GetWorkoutSet(ctx context.Context, id uuid.UUID) (WorkoutSet, error)
 	ListExercises(ctx context.Context) ([]Exercise, error)
 	ListQuotes(ctx context.Context) ([]Quote, error)
+	ListQuotesPaginated(ctx context.Context, arg ListQuotesPaginatedParams) ([]Quote, error)
 	ListRoutineExercises(ctx context.Context, routineID uuid.UUID) ([]ListRoutineExercisesRow, error)
 	ListRoutines(ctx context.Context) ([]Routine, error)
 	ListRoutinesPaginated(ctx context.Context, arg ListRoutinesPaginatedParams) ([]Routine, error)
