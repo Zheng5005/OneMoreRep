@@ -12,6 +12,7 @@ import (
 	"github.com/Zheng5005/onemorerep/internal/config"
 	"github.com/Zheng5005/onemorerep/internal/server"
 	"github.com/Zheng5005/onemorerep/internal/store"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
