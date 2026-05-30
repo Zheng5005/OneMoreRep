@@ -1,4 +1,6 @@
 import { Button } from '../../ui/Button';
+import { Spinner } from '../../ui/Spinner';
+import { QuoteCard } from '../../shared/QuoteCard';
 import { useRestTimer } from '../../../hooks/useRestTimer';
 import './RestTimer.css';
 
@@ -56,12 +58,12 @@ export function RestTimer({ defaultSeconds = 60, onDismiss }: RestTimerProps) {
       {quote && (
         <div className="rest-timer-quote">
           {isFetchingQuote ? (
-            <p className="quote-loading">Loading inspiration...</p>
+            <div className="quote-loading">
+              <Spinner size="sm" />
+              <p>Loading inspiration...</p>
+            </div>
           ) : (
-            <>
-              <p className="quote-text">"{quote.text}"</p>
-              <p className="quote-author">— {quote.author}</p>
-            </>
+            <QuoteCard quote={quote} />
           )}
         </div>
       )}

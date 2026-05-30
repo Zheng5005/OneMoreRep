@@ -3,6 +3,8 @@ import { useStore } from '../../../stores';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import { Modal } from '../../ui/Modal';
+import { Spinner } from '../../ui/Spinner';
+import { EmptyState } from '../../shared/EmptyState';
 import { ExerciseCard } from './ExerciseCard';
 import { ExerciseForm } from './ExerciseForm';
 import type { Exercise } from '../../../types';
@@ -11,7 +13,7 @@ import './ExerciseList.css';
 const PAGE_SIZE = 10;
 
 export function ExerciseList() {
-  const { exercises, loading, error, fetchExercises, createExercise, updateExercise, deleteExercise } = useStore();
+  const { exercises, loading, error, fetchExercises, createExercise, updateExercise, deleteExercise, addToast } = useStore();
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -59,13 +61,16 @@ export function ExerciseList() {
     try {
       if (editingExercise) {
         await updateExercise(editingExercise.id, data);
+        addToast('Exercise updated successfully', 'success');
       } else {
         await createExercise(data);
+        addToast('Exercise created successfully', 'success');
       }
       setIsModalOpen(false);
       setEditingExercise(null);
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'An error occurred');
+      addToast(e instanceof Error ? e.message : 'Failed to save exercise', 'error');
     } finally {
       setFormLoading(false);
     }
@@ -76,8 +81,10 @@ export function ExerciseList() {
     try {
       await deleteExercise(deleteConfirm.id);
       setDeleteConfirm(null);
+      addToast('Exercise deleted', 'success');
     } catch {
       setDeleteConfirm(null);
+      addToast('Failed to delete exercise', 'error');
     }
   };
 
@@ -105,7 +112,7 @@ export function ExerciseList() {
 
       {loading && exercises.length === 0 ? (
         <div className="exercise-list-loading">
-          <div className="loading-spinner" />
+          <Spinner size="lg" />
           <p>Loading exercises...</p>
         </div>
       ) : error ? (
@@ -116,14 +123,13 @@ export function ExerciseList() {
           </Button>
         </div>
       ) : filteredExercises.length === 0 ? (
-        <div className="exercise-list-empty">
-          <div className="empty-icon">🏋️</div>
-          <h3>No exercises yet</h3>
-          <p>Start building your library by adding your first exercise.</p>
-          <Button variant="primary" onClick={handleCreate}>
-            + Add Exercise
-          </Button>
-        </div>
+        <EmptyState
+          title="No exercises yet"
+          description="Build your library by adding your first exercise."
+          actionLabel="+ Add Exercise"
+          onAction={handleCreate}
+          icon="🏋️"
+        />
       ) : (
         <>
           <div className="exercise-grid">

@@ -4,6 +4,7 @@ import { ExerciseHistory } from './ExerciseHistory';
 import { VolumeChart } from './VolumeChart';
 import { SessionSummary } from './SessionSummary';
 import { Card } from '../../ui/Card';
+import { EmptyState } from '../../shared/EmptyState';
 import './ProgressScreen.css';
 
 type Tab = 'history' | 'volume' | 'summary';
@@ -82,11 +83,11 @@ export function ProgressScreen() {
             {selectedExercise ? (
               <ExerciseHistory exerciseId={selectedExercise.id} />
             ) : (
-              <div className="progress-placeholder">
-                <div className="empty-icon">🏋️</div>
-                <h4>Select an exercise</h4>
-                <p>Choose an exercise above to view its history.</p>
-              </div>
+              <EmptyState
+                title="Select an exercise"
+                description="Choose an exercise above to view its history."
+                icon="🏋️"
+              />
             )}
           </div>
         )}
@@ -106,11 +107,11 @@ export function ProgressScreen() {
             {sessionSummary ? (
               <SessionSummary sessionId={sessionSummary.session_id} />
             ) : (
-              <div className="progress-placeholder">
-                <div className="empty-icon">🏆</div>
-                <h4>No recent session</h4>
-                <p>Complete a workout to see your session summary here.</p>
-              </div>
+              <EmptyState
+                title="No recent session"
+                description="Complete a workout to see your session summary here."
+                icon="🏆"
+              />
             )}
           </div>
         )}

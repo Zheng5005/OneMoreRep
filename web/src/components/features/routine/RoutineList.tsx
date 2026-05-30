@@ -3,12 +3,14 @@ import { useStore } from '../../../stores';
 import type { Routine } from '../../../types';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
+import { Spinner } from '../../ui/Spinner';
+import { EmptyState } from '../../shared/EmptyState';
 import { RoutineCard } from './RoutineCard';
 import { RoutineBuilder } from './RoutineBuilder';
 import './RoutineList.css';
 
 export function RoutineList() {
-  const { routines, loading, error, fetchRoutines, deleteRoutine } = useStore();
+  const { routines, loading, error, fetchRoutines, deleteRoutine, addToast } = useStore();
 
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
@@ -39,6 +41,9 @@ export function RoutineList() {
     try {
       await deleteRoutine(deleteConfirm.id);
       setDeleteConfirm(null);
+      addToast('Routine deleted', 'success');
+    } catch {
+      addToast('Failed to delete routine', 'error');
     } finally {
       setDeleting(false);
     }
@@ -47,6 +52,7 @@ export function RoutineList() {
   const handleBuilderSave = () => {
     setIsBuilderOpen(false);
     setEditingRoutine(null);
+    addToast('Routine saved successfully', 'success');
   };
 
   const handleBuilderCancel = () => {
@@ -79,7 +85,7 @@ export function RoutineList() {
 
       {loading && routines.length === 0 ? (
         <div className="routine-list-loading">
-          <div className="loading-spinner" />
+          <Spinner size="lg" />
           <p>Loading routines...</p>
         </div>
       ) : error ? (
@@ -90,14 +96,13 @@ export function RoutineList() {
           </Button>
         </div>
       ) : routines.length === 0 ? (
-        <div className="routine-list-empty">
-          <div className="empty-icon">📋</div>
-          <h3>No routines yet</h3>
-          <p>Create your first routine to start organizing your workouts.</p>
-          <Button variant="primary" onClick={handleCreate}>
-            + Create Routine
-          </Button>
-        </div>
+        <EmptyState
+          title="No routines yet"
+          description="Create your first workout plan to get started."
+          actionLabel="+ Create Routine"
+          onAction={handleCreate}
+          icon="📋"
+        />
       ) : (
         <div className="routine-grid">
           {routines.map((routine) => (
