@@ -1,0 +1,128 @@
+.session-summary {
+  padding: 1rem 0;
+}
+
+.session-summary-loading,
+.session-summary-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.session-summary-error p {
+  color: var(--color-error);
+  margin-bottom: 1rem;
+}
+
+.session-summary-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.session-summary-empty .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.session-summary-empty h4 {
+  margin: 0 0 0.5rem 0;
+}
+
+.session-summary-empty p {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.session-summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.session-summary-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.session-date {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.session-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .session-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+
+.exercise-breakdown h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.exercise-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.exercise-breakdown-table th,
+.exercise-breakdown-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.exercise-breakdown-table th {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.exercise-breakdown-table td {
+  font-size: 0.875rem;
+}
+
+.exercise-breakdown-table .exercise-name {
+  font-weight: 500;
+}
+
+.exercise-breakdown-table tbody tr:hover {
+  background: var(--color-background);
+}

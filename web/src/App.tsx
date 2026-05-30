@@ -3,11 +3,12 @@ import { ExerciseList } from './components/features/exercise/ExerciseList';
 import { RoutineList } from './components/features/routine/RoutineList';
 import { ActiveSession } from './components/features/workout/ActiveSession';
 import { StartWorkoutModal } from './components/features/workout/StartWorkoutModal';
+import { ProgressScreen } from './components/features/progress/ProgressScreen';
 import { Button } from './components/ui/Button';
 import { useStore } from './stores';
 import './App.css';
 
-type Tab = 'exercises' | 'routines' | 'history' | 'workout';
+type Tab = 'exercises' | 'routines' | 'history' | 'workout' | 'progress';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('exercises');
@@ -26,7 +27,8 @@ function App() {
     setActiveTab('history');
   };
 
-  const showWorkoutTab = activeTab === 'workout' || (currentSession !== null && activeTab !== 'workout');
+  const isWorkoutTab = activeTab === 'workout';
+  const showWorkoutTab = isWorkoutTab || (currentSession !== null && !isWorkoutTab);
 
   return (
     <div className="app">
@@ -56,6 +58,12 @@ function App() {
             onClick={() => setActiveTab('history')}
           >
             History
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'progress' ? 'nav-tab-active' : ''}`}
+            onClick={() => setActiveTab('progress')}
+          >
+            Progress
           </button>
         </div>
       </nav>
@@ -94,6 +102,7 @@ function App() {
             </div>
           )
         )}
+        {activeTab === 'progress' && <ProgressScreen />}
       </main>
 
       <StartWorkoutModal
