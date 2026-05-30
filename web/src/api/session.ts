@@ -2,6 +2,12 @@ import { api } from './client';
 import type { Session, SetResponse, SessionSummary, HistorySession, PaginatedResponse } from '../types';
 
 export const sessionApi = {
+  getActive: (): Promise<{ data: Session | null }> =>
+    api.get<{ data: Session | null }>('/sessions/active'),
+
+  getWithSets: (id: string): Promise<Session & { sets: SetResponse[] }> =>
+    api.get<Session & { sets: SetResponse[] }>(`/sessions/${id}/with-sets`),
+
   list: (params?: { limit?: number; offset?: number }): Promise<PaginatedResponse<Session>> => {
     const query = new URLSearchParams();
     if (params?.limit) query.set('limit', String(params.limit));

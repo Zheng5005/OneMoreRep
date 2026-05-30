@@ -3,22 +3,31 @@ import { sessionApi } from '../api/session';
 import type { Session, SetResponse, SessionSummary, HistorySession } from '../types';
 import type { AllSlices } from './index';
 
+const LS_ACTIVE_SESSION_KEY = 'omr_active_session';
+
+export interface SessionWithSets extends Session {
+  sets?: SetResponse[];
+}
+
 export interface SessionSlice {
   sessions: Session[];
-  currentSession: Session | null;
+  currentSession: SessionWithSets | null;
   sessionHistory: HistorySession[];
   sessionSummary: SessionSummary | null;
+  activeSessionId: string | null;
   loading: boolean;
   error: string | null;
   fetchSessions: (params?: { limit?: number; offset?: number }) => Promise<void>;
   fetchSessionHistory: (params?: { limit?: number; offset?: number }) => Promise<void>;
-  startSession: (routineId?: string) => Promise<Session>;
+  startSession: (routineId?: string) => Promise<SessionWithSets>;
   endSession: (id: string) => Promise<Session>;
   addSet: (sessionId: string, data: { exercise_id: string; weight: number; reps: number }) => Promise<SetResponse>;
   updateSet: (sessionId: string, setId: string, data: { weight?: number; reps?: number }) => Promise<SetResponse>;
   deleteSet: (sessionId: string, setId: string) => Promise<void>;
   fetchSessionSummary: (id: string) => Promise<SessionSummary>;
-  setCurrentSession: (session: Session | null) => void;
+  setCurrentSession: (session: SessionWithSets | null) => void;
+  hydrateActiveSession: () => Promise<void>;
+  clearActiveSession: () => void;
 }
 
 export const createSessionSlice: StateCreator<AllSlices, [], [], SessionSlice> = (set) => ({
@@ -26,6 +35,7 @@ export const createSessionSlice: StateCreator<AllSlices, [], [], SessionSlice> =
   currentSession: null,
   sessionHistory: [],
   sessionSummary: null,
+  activeSessionId: null,
   loading: false,
   error: null,
 
@@ -55,15 +65,23 @@ export const createSessionSlice: StateCreator<AllSlices, [], [], SessionSlice> =
 
   startSession: async (routineId) => {
     const session = await sessionApi.start(routineId);
-    set((state) => ({ sessions: [session, ...state.sessions], currentSession: session }));
-    return session;
+    const sessionWithSets: SessionWithSets = { ...session, sets: [] };
+    localStorage.setItem(LS_ACTIVE_SESSION_KEY, session.id);
+    set((state) => ({
+      sessions: [session, ...state.sessions],
+      currentSession: sessionWithSets,
+      activeSessionId: session.id,
+    }));
+    return sessionWithSets;
   },
 
   endSession: async (id) => {
     const session = await sessionApi.end(id);
+    localStorage.removeItem(LS_ACTIVE_SESSION_KEY);
     set((state) => ({
       sessions: state.sessions.map((s) => (s.id === id ? session : s)),
       currentSession: state.currentSession?.id === id ? null : state.currentSession,
+      activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,
     }));
     return session;
   },
@@ -120,5 +138,31 @@ export const createSessionSlice: StateCreator<AllSlices, [], [], SessionSlice> =
 
   setCurrentSession: (session) => {
     set({ currentSession: session });
+  },
+
+  hydrateActiveSession: async () => {
+    const savedId = localStorage.getItem(LS_ACTIVE_SESSION_KEY);
+    if (!savedId) return;
+
+    set({ loading: true, error: null });
+    try {
+      const sessionWithSets = await sessionApi.getWithSets(savedId);
+      if (sessionWithSets.ended_at) {
+        localStorage.removeItem(LS_ACTIVE_SESSION_KEY);
+        set({ activeSessionId: null });
+      } else {
+        set({ currentSession: sessionWithSets, activeSessionId: savedId });
+      }
+    } catch {
+      localStorage.removeItem(LS_ACTIVE_SESSION_KEY);
+      set({ activeSessionId: null });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  clearActiveSession: () => {
+    localStorage.removeItem(LS_ACTIVE_SESSION_KEY);
+    set({ currentSession: null, activeSessionId: null });
   },
 });

@@ -67,3 +67,37 @@
 .placeholder p {
   color: var(--text);
 }
+
+.workout-placeholder,
+.workout-summary {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.workout-placeholder h2,
+.workout-summary h2 {
+  margin-bottom: 8px;
+}
+
+.workout-placeholder p,
+.workout-summary p {
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+.summary-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  background: var(--social-bg);
+  border-radius: 8px;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.summary-stats p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+}

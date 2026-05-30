@@ -1,0 +1,88 @@
+.start-workout-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.start-workout-description {
+  color: var(--text);
+  margin: 0;
+}
+
+.start-workout-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.start-workout-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.start-workout-option:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.start-workout-option.selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.option-icon {
+  font-size: 32px;
+}
+
+.option-title {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 16px;
+}
+
+.option-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.start-workout-routine-select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.start-workout-routine-select select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.start-workout-routine-select select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.start-workout-error {
+  color: #dc2626;
+  font-size: 14px;
+  margin: 0;
+}
+
+.start-workout-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

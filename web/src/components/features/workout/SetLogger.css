@@ -1,0 +1,39 @@
+.set-logger-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.set-logger-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.set-logger-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.set-logger-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.set-logger-field select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.set-logger-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}

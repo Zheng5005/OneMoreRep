@@ -1,0 +1,41 @@
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.set-row-number {
+  font-weight: 600;
+  color: var(--text-h);
+  min-width: 60px;
+}
+
+.set-row-values {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+}
+
+.set-row-weight {
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.set-row-separator {
+  color: var(--text-muted);
+}
+
+.set-row-reps {
+  color: var(--text);
+}
+
+.set-row-actions {
+  display: flex;
+  gap: 4px;
+}
