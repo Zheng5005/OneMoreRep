@@ -252,3 +252,55 @@ JOIN exercise e ON ws.exercise_id = e.id
 WHERE ws.session_id = $1
 GROUP BY ws.exercise_id, e.name
 ORDER BY e.name;
+
+-- name: GetExerciseHistory :many
+SELECT
+  ws.id as set_id,
+  ws.set_number,
+  ws.weight,
+  ws.reps,
+  ws.created_at as set_created_at,
+  s.id as session_id,
+  s.started_at as session_started_at,
+  s.ended_at as session_ended_at
+FROM workout_set ws
+JOIN workout_session s ON ws.session_id = s.id
+WHERE ws.exercise_id = $1
+  AND ($2::text = 'all'
+    OR ($2::text = '30d' AND s.started_at >= NOW() - INTERVAL '30 days')
+    OR ($2::text = '6m' AND s.started_at >= NOW() - INTERVAL '6 months'))
+ORDER BY s.started_at DESC, ws.set_number ASC;
+
+-- name: GetVolumeBySession :many
+SELECT
+  s.id as session_id,
+  s.started_at,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE ($1::uuid IS NULL OR ws.exercise_id = $1)
+  AND s.ended_at IS NOT NULL
+GROUP BY s.id, s.started_at
+ORDER BY s.started_at ASC;
+
+-- name: GetVolumeByWeek :many
+SELECT
+  TO_CHAR(s.started_at, 'YYYY-"W"IW') as period,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE ($1::uuid IS NULL OR ws.exercise_id = $1)
+  AND s.ended_at IS NOT NULL
+GROUP BY TO_CHAR(s.started_at, 'YYYY-"W"IW')
+ORDER BY period ASC;
+
+-- name: GetVolumeByMonth :many
+SELECT
+  TO_CHAR(s.started_at, 'YYYY-MM') as period,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE ($1::uuid IS NULL OR ws.exercise_id = $1)
+  AND s.ended_at IS NOT NULL
+GROUP BY TO_CHAR(s.started_at, 'YYYY-MM')
+ORDER BY period ASC;

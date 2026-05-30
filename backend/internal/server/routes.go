@@ -35,9 +35,14 @@ func registerRoutes(r chi.Router, db *store.DB) {
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", exerciseHandler.Get)
 				r.Get("/last-values", progressHandler.GetLastValues)
+				r.Get("/history", progressHandler.GetExerciseHistory)
 				r.Put("/", exerciseHandler.Update)
 				r.Delete("/", exerciseHandler.Delete)
 			})
+		})
+
+		r.Route("/progress", func(r chi.Router) {
+			r.Get("/volume", progressHandler.GetVolumeAggregation)
 		})
 
 		r.Route("/routines", func(r chi.Router) {

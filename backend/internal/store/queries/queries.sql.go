@@ -299,6 +299,70 @@ func (q *Queries) GetExerciseByNameAndMuscle(ctx context.Context, arg GetExercis
 	return i, err
 }
 
+const getExerciseHistory = `-- name: GetExerciseHistory :many
+SELECT
+  ws.id as set_id,
+  ws.set_number,
+  ws.weight,
+  ws.reps,
+  ws.created_at as set_created_at,
+  s.id as session_id,
+  s.started_at as session_started_at,
+  s.ended_at as session_ended_at
+FROM workout_set ws
+JOIN workout_session s ON ws.session_id = s.id
+WHERE ws.exercise_id = $1
+  AND ($2::text = 'all'
+    OR ($2::text = '30d' AND s.started_at >= NOW() - INTERVAL '30 days')
+    OR ($2::text = '6m' AND s.started_at >= NOW() - INTERVAL '6 months'))
+ORDER BY s.started_at DESC, ws.set_number ASC
+`
+
+type GetExerciseHistoryParams struct {
+	ExerciseID uuid.UUID `json:"exercise_id"`
+	Column2    string    `json:"column_2"`
+}
+
+type GetExerciseHistoryRow struct {
+	SetID            uuid.UUID          `json:"set_id"`
+	SetNumber        int32              `json:"set_number"`
+	Weight           pgtype.Numeric     `json:"weight"`
+	Reps             int32              `json:"reps"`
+	SetCreatedAt     time.Time          `json:"set_created_at"`
+	SessionID        uuid.UUID          `json:"session_id"`
+	SessionStartedAt time.Time          `json:"session_started_at"`
+	SessionEndedAt   pgtype.Timestamptz `json:"session_ended_at"`
+}
+
+func (q *Queries) GetExerciseHistory(ctx context.Context, arg GetExerciseHistoryParams) ([]GetExerciseHistoryRow, error) {
+	rows, err := q.db.Query(ctx, getExerciseHistory, arg.ExerciseID, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetExerciseHistoryRow{}
+	for rows.Next() {
+		var i GetExerciseHistoryRow
+		if err := rows.Scan(
+			&i.SetID,
+			&i.SetNumber,
+			&i.Weight,
+			&i.Reps,
+			&i.SetCreatedAt,
+			&i.SessionID,
+			&i.SessionStartedAt,
+			&i.SessionEndedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getExerciseLastValues = `-- name: GetExerciseLastValues :one
 SELECT ws.weight, ws.reps
 FROM workout_set ws
@@ -552,6 +616,119 @@ func (q *Queries) GetSessionWithSets(ctx context.Context, id uuid.UUID) (GetSess
 		&i.Sets,
 	)
 	return i, err
+}
+
+const getVolumeByMonth = `-- name: GetVolumeByMonth :many
+SELECT
+  TO_CHAR(s.started_at, 'YYYY-MM') as period,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE ($1::uuid IS NULL OR ws.exercise_id = $1)
+  AND s.ended_at IS NOT NULL
+GROUP BY TO_CHAR(s.started_at, 'YYYY-MM')
+ORDER BY period ASC
+`
+
+type GetVolumeByMonthRow struct {
+	Period      string      `json:"period"`
+	TotalVolume interface{} `json:"total_volume"`
+}
+
+func (q *Queries) GetVolumeByMonth(ctx context.Context, dollar_1 uuid.UUID) ([]GetVolumeByMonthRow, error) {
+	rows, err := q.db.Query(ctx, getVolumeByMonth, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetVolumeByMonthRow{}
+	for rows.Next() {
+		var i GetVolumeByMonthRow
+		if err := rows.Scan(&i.Period, &i.TotalVolume); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getVolumeBySession = `-- name: GetVolumeBySession :many
+SELECT
+  s.id as session_id,
+  s.started_at,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE ($1::uuid IS NULL OR ws.exercise_id = $1)
+  AND s.ended_at IS NOT NULL
+GROUP BY s.id, s.started_at
+ORDER BY s.started_at ASC
+`
+
+type GetVolumeBySessionRow struct {
+	SessionID   uuid.UUID   `json:"session_id"`
+	StartedAt   time.Time   `json:"started_at"`
+	TotalVolume interface{} `json:"total_volume"`
+}
+
+func (q *Queries) GetVolumeBySession(ctx context.Context, dollar_1 uuid.UUID) ([]GetVolumeBySessionRow, error) {
+	rows, err := q.db.Query(ctx, getVolumeBySession, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetVolumeBySessionRow{}
+	for rows.Next() {
+		var i GetVolumeBySessionRow
+		if err := rows.Scan(&i.SessionID, &i.StartedAt, &i.TotalVolume); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getVolumeByWeek = `-- name: GetVolumeByWeek :many
+SELECT
+  TO_CHAR(s.started_at, 'YYYY-"W"IW') as period,
+  COALESCE(SUM(ws.weight * ws.reps), 0) as total_volume
+FROM workout_session s
+LEFT JOIN workout_set ws ON ws.session_id = s.id
+WHERE ($1::uuid IS NULL OR ws.exercise_id = $1)
+  AND s.ended_at IS NOT NULL
+GROUP BY TO_CHAR(s.started_at, 'YYYY-"W"IW')
+ORDER BY period ASC
+`
+
+type GetVolumeByWeekRow struct {
+	Period      string      `json:"period"`
+	TotalVolume interface{} `json:"total_volume"`
+}
+
+func (q *Queries) GetVolumeByWeek(ctx context.Context, dollar_1 uuid.UUID) ([]GetVolumeByWeekRow, error) {
+	rows, err := q.db.Query(ctx, getVolumeByWeek, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetVolumeByWeekRow{}
+	for rows.Next() {
+		var i GetVolumeByWeekRow
+		if err := rows.Scan(&i.Period, &i.TotalVolume); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getWorkoutSession = `-- name: GetWorkoutSession :one
