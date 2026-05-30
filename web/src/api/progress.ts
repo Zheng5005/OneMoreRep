@@ -11,17 +11,17 @@ export const progressApi = {
   },
 
   getLastValues: (exerciseId: string): Promise<LastValues> =>
-    api.get<LastValues>(`/api/v1/exercises/${exerciseId}/last-values`),
+    api.get<LastValues>(`/exercises/${exerciseId}/last-values`),
 
   getSessionSummary: (sessionId: string): Promise<SessionSummary> =>
-    api.get<SessionSummary>(`/api/v1/sessions/${sessionId}/summary`),
+    api.get<SessionSummary>(`/sessions/${sessionId}/summary`),
 
   getExerciseHistory: (exerciseId: string, filter?: 'all' | '30d' | '6m'): Promise<HistorySession[]> =>
-    api.get<HistorySession[]>(`/api/v1/exercises/${exerciseId}/history?filter=${filter || 'all'}`),
+    api.get<HistorySession[]>(`/exercises/${exerciseId}/history?filter=${filter || 'all'}`),
 
   getVolume: (groupBy: 'session' | 'week' | 'month', exerciseId?: string): Promise<VolumePoint[]> => {
     const params = new URLSearchParams({ group_by: groupBy });
     if (exerciseId) params.append('exercise_id', exerciseId);
-    return api.get<VolumePoint[]>(`/api/v1/progress/volume?${params.toString()}`);
+    return api.get<VolumePoint[]>(`/progress/volume?${params.toString()}`);
   },
 };

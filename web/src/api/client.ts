@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_PREFIX = '/api/v1';
 
 export class ApiError extends Error {
   code: string;
@@ -17,7 +18,8 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const fullPath = path.startsWith('/api') ? path : `${API_PREFIX}${path}`;
+  const res = await fetch(`${API_URL}${fullPath}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     ...options,
   });

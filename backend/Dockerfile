@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION=1.26.3
+ARG GO_VERSION=1.24
 ARG ALPINE_VERSION=3.21
 
 # ------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ WORKDIR /app
 # Development stage with hot-reload (air)
 # ------------------------------------------------------------------------------
 FROM base AS dev
-RUN go install github.com/air-verse/air@latest
+RUN go install github.com/air-verse/air@v1.61.0
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
